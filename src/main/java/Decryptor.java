@@ -22,6 +22,7 @@ public class Decryptor {
 
         KeyDerivation.Keys keys = KeyDerivation.deriveKeys(password, salt);
 
+        // Verify integrity FIRST, using a constant-time comparison
         byte[] expected = KeyDerivation.hmac(keys.macKey, header, data);
         if (!MessageDigest.isEqual(expected, tag)) {
             throw new GeneralSecurityException("Authentication failed: wrong password or data was modified");
@@ -31,12 +32,14 @@ public class Decryptor {
         for (int r = KeyDerivation.ROUNDS - 1; r >= 0; r--) {
             RoundParams p = new RoundParams(keys.encKey, nonce, r, n);
 
+            // Undo step 3: reverse the transposition
             byte[] unshuffled = new byte[n];
             for (int i = 0; i < n; i++) {
                 unshuffled[p.perm[i]] = data[i];
             }
             data = unshuffled;
 
+            // Undo step 2 and 1: XOR, then subtract
             for (int i = 0; i < n; i++) {
                 int x = (data[i] & 0xFF) ^ p.k2[i];
                 data[i] = (byte) ((x - p.k1[i]) & 0xFF);

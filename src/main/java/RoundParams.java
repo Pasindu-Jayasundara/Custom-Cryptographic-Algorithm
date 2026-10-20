@@ -27,5 +27,4 @@ public class RoundParams {
             perm[j] = t;
         }
     }
-} public class RoundParams {
 }
